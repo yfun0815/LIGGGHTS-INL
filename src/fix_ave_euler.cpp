@@ -95,8 +95,7 @@ FixAveEuler::FixAveEuler(LAMMPS *lmp, int narg, char **arg) :
 
   array_flag = 1;
   size_array_rows = BIG;
-  size_array_cols = 3 + 1 + 3;
-
+  size_array_cols = 3 + 1 + 3 + 1 + 6 + 1; // FEG - cell pos (x,y,x), volume fraction in cell, average velocity in cell, pressure, stress tensor (xx, yy, zz, xy, yz, xz), average radius;
   triclinic_ = domain->triclinic;  
 
   // random number generator, seed is hardcoded

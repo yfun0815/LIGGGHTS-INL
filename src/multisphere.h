@@ -58,6 +58,7 @@ namespace LAMMPS_NS {
     friend class FixMultisphere;
     friend class FixChangeSizeMultisphere;
     friend class SetMultisphere;
+    friend class SetMultisphereAll; // FEG
     friend class FixMoveMultisphere;
 
     public:
@@ -105,7 +106,9 @@ namespace LAMMPS_NS {
       double extract_rke();
       double extract_vave();
       double extract_omega_ave();
-
+      double extract_unbalancedforce(); // FEG
+      double extract_unbalancedforce_squared(); // FEG
+      double extract_unbalancedforce_squared_averaged(); // FEG
       // inline access functions
 
       inline int n_body() const

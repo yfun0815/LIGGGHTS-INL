@@ -37,6 +37,10 @@
 
     Copyright 2012-     DCS Computing GmbH, Linz
     Copyright 2009-2012 JKU Linz
+-------------------------------------------------------------------------
+    Contributing author and copyright for this file:
+    Fan Yi (University of Michigan, Ann Arbor/Tianjin University)
+    Copyright 09/06/2023-
 ------------------------------------------------------------------------- */
 
 #include "compute_pair_gran_local.h"
@@ -54,6 +58,7 @@
 #include "pair_gran_proxy.h"
 #include "update.h"
 #include "vector_liggghts.h"
+#include "math_extra_liggghts_superquadric.h"
 
 #include <cmath>
 
@@ -730,12 +735,35 @@ void ComputePairGranLocal::post_force_pp(const LCM::SurfacesIntersectData &sidat
     { // FEG
         if(atom->superquadric_flag) // FEG
         { // FEG
-	  // FEG NOTE: This is currently outputing delta for overlap ratio. It's not completed.
-            const double aveshapei = (atom->shape[i][0] + atom->shape[i][1] +atom->shape[i][2])/3.0;// FY
-            const double aveshapej = (atom->shape[j][0] + atom->shape[j][1] +atom->shape[j][2])/3.0;// FY
+	  // FY NOTE: This is completed.
             int alpha1_offset = get_history_offset("alpha1_offset"); // FY
             int alpha2_offset = get_history_offset("alpha2_offset"); // FY
-            array[ipair][n++] = 0.5*(sidata.contact_history[alpha1_offset]+sidata.contact_history[alpha2_offset])/std::min(aveshapei,aveshapej); // FY
+
+            Superquadric particle_i; // FY
+            Superquadric particle_j; // FY
+            particle_i.set(atom->x[i], atom->quaternion[i], atom->shape[i], atom->blockiness[i]); // FY
+            particle_j.set(atom->x[j], atom->quaternion[j], atom->shape[j], atom->blockiness[j]); // FY
+            int contact_point_offset = get_history_offset("contact_point_offset"); // FY
+            double *const prev_step_point = &sidata.contact_history[contact_point_offset]; // FY
+
+            double en[3] = {0.0, 0.0, 0.0}; // FY
+            double delta[3] = {0.0, 0.0, 0.0}; // FY
+
+            vectorSubtract3D(particle_j.gradient, particle_i.gradient, en); // FY
+            vectorNormalize3D(en); // FY
+            
+            double *const alpha_i = &sidata.contact_history[alpha1_offset]; // FY
+            double *const alpha_j = &sidata.contact_history[alpha2_offset]; // FY
+            
+            double contact_point_i[3], contact_point_j[3]; // FY
+            
+            
+            LAMMPS_NS::vectorNegate3D(en); // FY
+            *alpha_i = particle_i.surface_line_intersection(false, prev_step_point, en, *alpha_i, contact_point_i); // FY
+            LAMMPS_NS::vectorNegate3D(en); // FY
+            *alpha_j = particle_j.surface_line_intersection(false, prev_step_point, en, *alpha_j, contact_point_j); // FY
+            array[ipair][n++] = fabs(*alpha_i) + fabs(*alpha_j); // FY
+
         } // FEG
         else // FEG
 	{ // FEG

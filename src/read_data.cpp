@@ -716,7 +716,7 @@ void ReadData::atoms()
   }
 
   if (natoms != atom->natoms)
-    error->all(FLERR,"Did not assign all atoms correctly");
+    error->warning(FLERR,"Did not assign all atoms correctly");
 
   // if any atom ID < 0, error
   // if all atom IDs = 0, tag_enable = 0
@@ -763,8 +763,9 @@ void ReadData::atoms()
           for(int i = nlocal_old; i < nlocal; i++)
             if(atom->tag[i] <= tag_max_old)
             {
-                fprintf(screen,"for i= %d\n",i);
-                error->one(FLERR,"Atom from data file uses atom tag that is already used by atom in the simulation");
+                atom->tag[i] += tag_max_old;  //FY: You only need to make sure that the minimum id of data file is started from 1
+                //fprintf(screen,"for i= %d\n",i);
+                //error->one(FLERR,"Atom from data file uses atom tag that is already used by atom in the simulation");
             }
           atom->tag_extend();
       }

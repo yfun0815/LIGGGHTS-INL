@@ -157,6 +157,8 @@ class DumpLocalGran : public Pointers {
     void pack_contact_point(int);
     void pack_ms_id1(int);
     void pack_ms_id2(int);
+    void pack_overlap_ratio(int); // FEG
+    void pack_squared_force(int); // FEG
 };
 
 }

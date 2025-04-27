@@ -671,6 +671,48 @@ double Multisphere::extract_omega_ave()
   return omega_ave/nbody_all_;
 }
 
+/* ----------------------------------------------------------------------
+   Added by Estefan Garcia (FEG)
+   return unbalanced force for all rigid bodies
+   UBF = sqrt(fx*fx+fy*fy+fz*fz)
+------------------------------------------------------------------------- */
+
+double Multisphere::extract_unbalancedforce() // FEG
+{ // FEG
+  double ubf = 0.0; // FEG 
+  
+  for (int i = 0; i < nbody_; i++) // FEG
+    ubf += vectorMag3D(fcm_(i)); // FEG
+
+  MPI_Sum_Scalar(ubf,world); // FEG
+
+  return ubf; // FEG
+} // FEG
+
+double Multisphere::extract_unbalancedforce_squared() // FEG
+{ // FEG
+  double ubf2 = 0.0; // FEG 
+  
+  for (int i = 0; i < nbody_; i++) // FEG
+    ubf2 += vectorMag3DSquared(fcm_(i)); // FEG
+
+  MPI_Sum_Scalar(ubf2,world); // FEG
+
+  return ubf2; // FEG
+} // FEG
+
+double Multisphere::extract_unbalancedforce_squared_averaged() // FEG
+{ // FEG
+  double ubf2ave = 0.0; // FEG 
+  
+  for (int i = 0; i < nbody_; i++) // FEG
+    ubf2ave += vectorMag3DSquared(fcm_(i)); // FEG
+
+  MPI_Sum_Scalar(ubf2ave,world); // FEG
+
+  return ubf2ave/nbody_all_; // FEG
+} // FEG
+
 int Multisphere::size_restart() const
 {
     error->one(FLERR,"Multisphere write_restart is not available in your version. See www.cfdem.com for details");

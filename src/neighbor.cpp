@@ -505,7 +505,7 @@ void Neighbor::init()
   //   current requests = old requests
   // first archive request params for current requests
   //   before Neighbor possibly changes them below
-
+  
   for (i = 0; i < nrequest; i++) requests[i]->archive();
 
   int same = 1;
@@ -1863,8 +1863,26 @@ double Neighbor::bin_largest_distance(int i, int j, int k)
 
 void Neighbor::set(int narg, char **arg, bool auto_set_bin)
 {
-  if (narg != (auto_set_bin ? 1 : 2))
-    error->all(FLERR,"Illegal neighbor command");
+  // Lines commented with the initials FEG are edits made by
+  // F. Estefan T. Garcia, University of Michigan. Questions or
+  // conerns may be addressed to fegarcia@umich.edu.
+  // The edits in this function allow the "one" and "page"
+  // settings to be set permanently, which prevents pairwise
+  // neighbor lists from being rebuilt unnecessarily at the
+  // start of every run. Changing "one" and "page" from their
+  // default settings with the neigh_modify command can
+  // significantly alter results when neighbor lists are
+  // unnecessarily rebuilt. Therefore, neigh_modify is not
+  // recommended for changing "one" and "page".
+  
+  if (auto_set_bin) //FEG
+  { // FEG
+    if (narg != 1) error->all(FLERR,"Illegal neighbor command"); // FEG
+  }else{ //FEG
+    if (narg > 6) error->all(FLERR,"Illegal neighbor command"); // FEG
+  } // FEG
+  //if (narg != (auto_set_bin ? 1 : 2))
+  //  error->all(FLERR,"Illegal neighbor command");
 
   skin = force->cg_max()*force->numeric(FLERR,arg[0]); 
   if (skin < 0.0) error->all(FLERR,"Illegal neighbor command");
@@ -1880,6 +1898,52 @@ void Neighbor::set(int narg, char **arg, bool auto_set_bin)
   }
 
   if (style == MULTI && lmp->citeme) lmp->citeme->add(cite_neigh_multi);
+
+  if (narg > 2) // FEG
+  { // FEG
+    if (narg == 4) // FEG
+    { // FEG
+      if (strcmp(arg[2],"one") == 0) // FEG
+      { // FEG
+	oneatom = force->numeric(FLERR,arg[3]); // FEG
+	old_oneatom = oneatom; // FEG
+	if (oneatom <= 0.0) error->all(FLERR,"Illegal neighbor command: 'one' must be greater than 0"); // FEG
+      } // FEG
+      else if (strcmp(arg[2],"page") == 0) // FEG
+      {// FEG
+	pgsize = force->numeric(FLERR,arg[3]); // FEG
+	old_pgsize = pgsize; // FEG
+	if (pgsize <= 0.0) error->all(FLERR,"Illegal neighbor command: 'pgsize' must be greater than 0"); // FEG
+      }
+      else error->all(FLERR,"Illegal neighbor command"); // FEG
+    } // FEG
+    else if (narg == 6) // FEG
+    { // FEG
+      int iarg = 2; // FEG
+      while (iarg < narg) // FEG
+      { // FEG
+	if (strcmp(arg[iarg],"one") == 0) // FEG
+	{ // FEG
+	  oneatom = force->numeric(FLERR,arg[iarg+1]); // FEG
+	  old_oneatom = oneatom; // FEG
+	  if (oneatom <= 0.0) error->all(FLERR,"Illegal neighbor command: 'one' must be greater than 0"); // FEG
+	} // FEG
+	else if (strcmp(arg[iarg],"page") == 0) // FEG
+	{ // FEG
+	  pgsize = force->numeric(FLERR,arg[iarg+1]); // FEG
+	  old_pgsize = pgsize; // FEG
+	  if (pgsize <= 0.0) error->all(FLERR,"Illegal neighbor command: 'pgsize' must be greater than 0"); // FEG
+	} // FEG
+	else error->all(FLERR,"Illegal neighbor command"); // FEG
+	iarg += 2; // FEG
+      } // FEG
+    } // FEG
+    else error->all(FLERR,"Illegal neighbor command"); // FEG
+  } // FEG
+
+  if (pgsize < 10*oneatom) // FEG
+    error->all(FLERR,"Neighbor page size must be >= 10x the one atom setting"); // FEG
+
 }
 
 /* ----------------------------------------------------------------------
@@ -1907,6 +1971,16 @@ void Neighbor::modify_params_restricted(int narg, char **arg)
 
 void Neighbor::modify_params(int narg, char **arg)
 {
+  // Note from FEG: Modifying the page and/or one setting with the neigh_modify
+  // command forces pairwise neighbor lists to be rebuilt at the start of every
+  // run. This causes unrealistic physics in granular simulations, such as results
+  // being overly sensitive to externally applied velocities, e.g., wall velocities.
+  // This problem is more obvious with lower numbers of cycles per run. To overcome
+  // this problem, the 'one' and 'page' settings should instead be modified directly
+  // in the "neighbor" command following the STYLE keyword. This way, 'oneatom',
+  // 'old_oneatom', 'pgsize', and 'old_pgsize' are permanently set for the duration
+  // of the simulation.
+  
   int iarg = 0;
   while (iarg < narg) {
     if (strcmp(arg[iarg],"every") == 0) {

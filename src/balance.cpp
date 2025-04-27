@@ -51,6 +51,10 @@
     DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains
     certain rights in this software.  This software is distributed under
     the GNU General Public License.
+-------------------------------------------------------------------------
+    Contributing author and copyright for this file:
+    Fan Yi (University of Michigan, Ann Arbor/Tianjin University)
+    Copyright 08/22/2023-
 ------------------------------------------------------------------------- */
 
 #include "lmptype.h"
@@ -1335,6 +1339,19 @@ void Balance::dumpout(bigint tstep)
       m += 8;
     }
   }
+
+  fprintf(fp,"x cuts:");
+  for (int i = 0; i <= comm->procgrid[0]; i++)
+    fprintf(fp," %g",comm->xsplit[i]);
+  fprintf(fp,"\n");
+  fprintf(fp,"y cuts:");
+  for (int i = 0; i <= comm->procgrid[1]; i++)
+    fprintf(fp," %g",comm->ysplit[i]);
+  fprintf(fp,"\n");
+  fprintf(fp,"z cuts:");
+  for (int i = 0; i <= comm->procgrid[2]; i++)
+    fprintf(fp," %g",comm->zsplit[i]);
+  fprintf(fp,"\n");
 
   memory->destroy(boxall);
 }

@@ -101,6 +101,9 @@ void DumpEulerVTK::init_style()
   // node center (3), av vel (3), volume fraction, stress, radius
   size_one = 9;
 
+  // node center (3), av vel (3), volume fraction, stress, radius, stress tensor // FEG
+  size_one = 15; // FEG
+
   delete [] format;
 }
 
@@ -158,6 +161,14 @@ void DumpEulerVTK::pack(int *ids)
     buf[m++] = fix_euler_->cell_vol_fr(i);
     buf[m++] = fix_euler_->cell_radius(i);
     buf[m++] = fix_euler_->cell_pressure(i);
+
+    buf[m++] = fix_euler_->cell_stress(i,0); // FEG - xx
+    buf[m++] = fix_euler_->cell_stress(i,1); // FEG - yy
+    buf[m++] = fix_euler_->cell_stress(i,2); // FEG - zz
+    buf[m++] = fix_euler_->cell_stress(i,3); // FEG - xy
+    buf[m++] = fix_euler_->cell_stress(i,4); // FEG - xz
+    buf[m++] = fix_euler_->cell_stress(i,5); // FEG - yz
+
   }
   return ;
 }
@@ -252,6 +263,15 @@ void DumpEulerVTK::write_data_ascii(int n, double *mybuf)
       m += size_one;
   }
   buf_pos++;
+
+  fprintf(fp,"TENSOR stress float 1\nLOOKUP_TABLE default\n"); // FEG
+  m = buf_pos; // FEG
+  for (int i = 0; i < n; i++) // FEG
+  { // FEG
+    fprintf(fp,"%f %f %f\n %f %f %f\n %f %f %f\n\n",mybuf[m],mybuf[m+3],mybuf[m+4],mybuf[m+3],mybuf[m+1],mybuf[m+5],mybuf[m+4],mybuf[m+5],mybuf[m+2]); // FEG
+    m += size_one; // FEG
+  } // FEG
+  buf_pos++; // FEG
 
   // footer not needed
   // if would be needed, would do like in dump stl

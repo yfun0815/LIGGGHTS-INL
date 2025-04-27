@@ -85,7 +85,7 @@
 using namespace LAMMPS_NS;
 
 enum{INT,DOUBLE,STRING}; // same as in DumpCFG
-enum{X1,X2,CP,V1,V2,ID1,ID2,F,FN,FT,TORQUE,TORQUEN,TORQUET,AREA,DELTA,HEAT,MSID1,MSID2}; // dumps positions, force, normal and tangential forces, torque, normal and tangential torque
+enum{X1,X2,CP,V1,V2,ID1,ID2,F,FN,FT,TORQUE,TORQUEN,TORQUET,AREA,DELTA,HEAT,MSID1,MSID2,OR,FSQ}; // dumps positions, force, normal and tangential forces, torque, normal and tangential torque // FEG: overlap ratio and squared forces
 
 /* ---------------------------------------------------------------------- */
 
@@ -632,6 +632,22 @@ void DumpLocalGran::define_properties()
             name[MSID2] = "ms_id2";
             //scalar
     }
+
+    if(cpgl_->offset_overlapratio() >= 0) // FEG
+    { // FEG
+            pack_choice[OR] = &DumpLocalGran::pack_overlap_ratio; // FEG
+            vtype[OR] = DOUBLE; // FEG
+            name[OR] = "overlap_ratio"; // FEG
+            //scalar // FEG
+    } // FEG
+
+    if(cpgl_->offset_squaredforce() >= 0) // FEG
+    { // FEG
+            pack_choice[FSQ] = &DumpLocalGran::pack_squared_force; // FEG
+            vtype[FSQ] = DOUBLE; // FEG
+            name[FSQ] = "squared_force"; // FEG
+            //scalar // FEG
+    } // FEG
 }
 
 /* ---------------------------------------------------------------------- */
@@ -874,5 +890,25 @@ void DumpLocalGran::pack_ms_id2(int n)
         n += size_one;
     }
 }
+
+void DumpLocalGran::pack_overlap_ratio(int n) // FEG
+{ // FEG
+    int offset = cpgl_->offset_overlapratio(); // FEG
+
+    for (int i = 0; i < nchoose; i++) { // FEG
+        buf[n] = cpgl_->get_data()[i][offset]; // FEG
+        n += size_one; // FEG
+    } // FEG
+} // FEG
+
+void DumpLocalGran::pack_squared_force(int n) // FEG
+{ // FEG
+    int offset = cpgl_->offset_squaredforce(); // FEG
+
+    for (int i = 0; i < nchoose; i++) { // FEG
+        buf[n] = cpgl_->get_data()[i][offset]; // FEG
+        n += size_one; // FEG
+    } // FEG
+} // FEG
 
 #endif

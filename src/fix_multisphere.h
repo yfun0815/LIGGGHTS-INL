@@ -79,6 +79,7 @@ enum
 class FixMultisphere : public Fix
 {
     friend class SetMultisphere;
+    friend class SetMultisphereAll; // FEG
     friend class FixMoveMultisphere;
 
 public:
@@ -173,6 +174,12 @@ public:
     double extract_omega_ave()
     { return data().extract_omega_ave(); }
 
+    double extract_unbalancedforce() // FEG
+    { return data().extract_unbalancedforce(); } // FEG 
+
+    double extract_unbalancedforce_squared() // FEG
+    { return data().extract_unbalancedforce_squared(); } // FEG 
+
     void set_v_body_from_atom_index(int iatom,double *vel)
     {if(body_[iatom] >= 0) multisphere_.set_v_body(body_[iatom],vel); }
 
@@ -250,6 +257,7 @@ public:
     class FixPropertyAtom *fix_volumeweight_ms_; 
     bool use_volumeweight_ms_;
     class FixGravity *fix_gravity_;
+    class FixNonViscous *fix_nonviscous_; // FEG
     FixHeatGran *fix_heat_;
 
     //int comm_di_;

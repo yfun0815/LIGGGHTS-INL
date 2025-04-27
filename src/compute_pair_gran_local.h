@@ -155,6 +155,17 @@ public:
     {
         return (msidflag > 0 ?   posflag*6+velflag*6+idflag*3+fflag*3+fnflag*3+ftflag*3+torqueflag*3+torquenflag*3+torquetflag*3+histflag*dnum+areaflag*1 + deltaflag*1 + heatflag*1 + cpflag*3 +1 : -1);
     }
+    
+    virtual int offset_overlapratio() // FEG
+  { // FEG
+      return (overlapratioflag > 0 ?   posflag*6+velflag*6+idflag*3+fflag*3+fnflag*3+ftflag*3+torqueflag*3+torquenflag*3+torquetflag*3+histflag*dnum+areaflag*1 + deltaflag*1 + heatflag*1 + cpflag*3 + msidflag*2 : -1); // FEG
+    } // FEG
+
+    virtual int offset_squaredforce() // FEG
+  { // FEG
+    return (squaredforceflag > 0 ? posflag*6+velflag*6+idflag*3+fflag*3+fnflag*3+ftflag*3+torqueflag*3+torquenflag*3+torquetflag*3+histflag*dnum+areaflag*1 + deltaflag*1 + heatflag*1 + cpflag*3 + msidflag*2 + overlapratioflag*1: -1); // FEG
+    } // FEG
+
 
 protected:
 
@@ -183,7 +194,7 @@ protected:
 
     int ipair;
 
-    int posflag,velflag,idflag,fflag,fnflag,ftflag,torqueflag,torquenflag,torquetflag,histflag,areaflag,deltaflag,heatflag,cpflag,msidflag;
+    int posflag,velflag,idflag,fflag,fnflag,ftflag,torqueflag,torquenflag,torquetflag,histflag,areaflag,deltaflag,heatflag,cpflag,msidflag,overlapratioflag,squaredforceflag; // FEG - added overlapratioflag and squaredforceflag
 
     bool   verbose;
 

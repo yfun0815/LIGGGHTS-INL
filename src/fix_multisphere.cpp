@@ -62,6 +62,7 @@
 #include "fix_template_multisphere.h"
 #include "neighbor.h"
 #include "fix_gravity.h"
+#include "fix_nonviscous.h" //FEG
 #include "vector_liggghts.h"
 #include "mpi_liggghts.h"
 #include "atom_vec.h"
@@ -95,6 +96,7 @@ FixMultisphere::FixMultisphere(LAMMPS *lmp, int narg, char **arg) :
   fix_volumeweight_ms_(0),
   use_volumeweight_ms_(true),
   fix_gravity_(0),
+  fix_nonviscous_(0), // FEG
   fw_comm_flag_(MS_COMM_UNDEFINED),
   rev_comm_flag_(MS_COMM_UNDEFINED),
   body_(NULL),
@@ -408,6 +410,10 @@ void FixMultisphere::init()
     if(modify->n_fixes_style("gravity") > 1)
         ms_error(FLERR,"only one fix gravity supported");
     fix_gravity_ = static_cast<FixGravity*>(modify->find_fix_style("gravity",0));
+
+    if(modify->n_fixes_style("nonviscous") > 1) //FEG
+      ms_error(FLERR,"only one fix nonviscous supported"); //FEG
+    fix_nonviscous_ = static_cast<FixNonViscous*>(modify->find_fix_style("nonviscous",0)); //FEG
 
     // warn if more than one rigid fix
     if(modify->n_fixes_style("rigid") + modify->n_fixes_style("multisphere") > 1)
@@ -768,6 +774,27 @@ void FixMultisphere::calc_force(bool setupflag)
             
       }
   }
+  if(fix_nonviscous_) //FEG
+  {//FEG
+      double **vcm = multisphere_.vcm_.begin();//FEG
+      double damp; //FEG
+      double forcemag; //FEG
+      double velocitymag; //FEG      
+      fix_nonviscous_->get_damp(damp); //FEG
+      
+      for (ibody = 0; ibody < nbody; ibody++) //FEG
+      {//FEG
+	forcemag = vectorMag3D(fcm[ibody]); //FEG
+        velocitymag = vectorMag3D(vcm[ibody]); //FEG
+	if (velocitymag > 0) //FEG
+	{ //FEG
+	  fcm[ibody][0] -= damp*forcemag*vcm[ibody][0]/velocitymag; //FEG
+	  fcm[ibody][1] -= damp*forcemag*vcm[ibody][1]/velocitymag; //FEG
+	  fcm[ibody][2] -= damp*forcemag*vcm[ibody][2]/velocitymag; //FEG
+	} //FEG
+      }//FEG
+  }//FEG
+
 //  if(add_dragforce_)
 //  {
 //    for (ibody = 0; ibody < nbody; ibody++)
@@ -1296,6 +1323,39 @@ int FixMultisphere::modify_param(int narg, char **arg)
           multisphere_.set_tflag(ibody,tflag);
         }
         return 4;
+    }else if(strcmp(arg[0],"angular") == 0) { // FEG
+        if (narg < 4) // FEG
+            ms_error(FLERR,"not enough arguments for 'angular'"); // FEG
+
+	double angular_mods[3]; // FEG
+	angular_mods[0] = force->numeric(FLERR,arg[1]); // FEG
+	angular_mods[1] = force->numeric(FLERR,arg[2]); // FEG
+	angular_mods[2] = force->numeric(FLERR,arg[3]); // FEG
+
+	//MODIFY OMEGA AND ANGMOM FOR ALL MS // FEG
+        int nbody = multisphere_.n_body(); // FEG
+	for (int ibody=0; ibody < nbody; ibody++){ // FEG
+	  multisphere_.set_omega_body(ibody, angular_mods); // FEG
+	  multisphere_.set_angmom_via_omega_body(ibody, angular_mods); // FEG
+	  set_xv(); // FEG
+	} // FEG
+        return 4; // FEG
+    }else if(strcmp(arg[0],"linear") == 0) { // FEG
+        if (narg < 4) // FEG
+            ms_error(FLERR,"not enough arguments for 'linear'"); // FEG
+
+	double linear_mods[3]; // FEG
+	linear_mods[0] = force->numeric(FLERR,arg[1]); // FEG
+	linear_mods[1] = force->numeric(FLERR,arg[2]); // FEG
+        linear_mods[2] = force->numeric(FLERR,arg[3]); // FEG
+
+	//MODIFY VELOCITIES FOR ALL MS // FEG
+        int nbody = multisphere_.n_body(); // FEG
+	for (int ibody=0; ibody < nbody; ibody++){ // FEG
+	  multisphere_.set_v_body(ibody, linear_mods); // FEG
+	  set_xv(); // FEG
+	} // FEG
+        return 4; // FEG
     }
     return 0;
 }

@@ -89,7 +89,7 @@ FixTemplateMultiplespheres::FixTemplateMultiplespheres(LAMMPS *lmp, int narg, ch
   // parse number of spheres
   if (strcmp(arg[iarg++],"nspheres") != 0) error->fix_error(FLERR,this,"expecting argument 'nspheres'");
   nspheres = atoi(arg[iarg++]);
-  if(nspheres < 2) error->fix_error(FLERR,this,"illegal number of spheres");
+  if(nspheres < 1) error->fix_error(FLERR,this,"illegal number of spheres"); // FEG Note: Changing to "nspheres < 1" will throw an error when using multisphere/break. Use with caution.
 
   // allocate arrays
   memory->create(x_sphere,nspheres,3,"FixTemplateMultiplespheres:x_sphere");

@@ -35,6 +35,11 @@
     Alexander Podlozhnyuk (DCS Computing GmbH, Linz)
 
     Copyright 2015-     DCS Computing GmbH, Linz
+
+-------------------------------------------------------------------------
+    Contributing author and copyright for this file:
+    Fan Yi (University of Michigan, Ann Arbor/Tianjin University)
+    Copyright 08/22/2023-
 ------------------------------------------------------------------------- */
 
 #include <cmath>
@@ -54,6 +59,7 @@
 #include "math_const.h"
 #include "memory.h"
 #include "error.h"
+#include <iostream>
 
 using namespace LAMMPS_NS;
 using namespace MathConst;
@@ -73,10 +79,10 @@ AtomVecSuperquadric::AtomVecSuperquadric(LAMMPS *lmp) : AtomVec(lmp)
   size_forward = 7;
   size_reverse = 6;
   size_border = 23;
-  size_velocity = 6;
-  size_data_atom = 8;
-  size_data_vel = 7;
-  xcol_data = 9;
+  size_velocity = 9;
+  size_data_atom = 20;
+  size_data_vel = 10;
+  xcol_data = 5;
 
   atom->superquadric_flag = 1;
   atom->radius_flag = atom->rmass_flag = atom->omega_flag = atom->density_flag =
@@ -1164,24 +1170,31 @@ void AtomVecSuperquadric::data_atom(double *coord, tagint imagetmp, char **value
   if (density[nlocal] <= 0.0)
     error->one(FLERR,"Invalid density in Atoms section of data file");
 
-  shape[nlocal][0] = atof(values[3]);
+  shape[nlocal][0] = atof(values[7]);
   if (shape[nlocal][0] <= 0.0)
     error->one(FLERR,"Invalid shape in Atoms section of data file");
 
-  shape[nlocal][1] = atof(values[4]);
+  shape[nlocal][1] = atof(values[8]);
   if (shape[nlocal][1] <= 0.0)
       error->one(FLERR,"Invalid shape in Atoms section of data file");
 
-  shape[nlocal][2] = atof(values[5]);
+  shape[nlocal][2] = atof(values[9]);
   if (shape[nlocal][2] <= 0.0)
       error->one(FLERR,"Invalid shape in Atoms section of data file");
 
-  blockiness[nlocal][0] = atof(values[6]);
+  blockiness[nlocal][0] = atof(values[10]);
   if (blockiness[nlocal][0] < 2.0)
       error->one(FLERR,"Invalid blockiness in Atoms section of data file");
-  blockiness[nlocal][1] = atof(values[7]);
+  blockiness[nlocal][1] = atof(values[11]);
   if (blockiness[nlocal][1] < 2.0)
       error->one(FLERR,"Invalid blockiness in Atoms section of data file");
+
+  // double *quat = bonus[nlocal_bonus].quat;
+  quaternion[nlocal][0] = atof(values[12]);
+  quaternion[nlocal][1] = atof(values[13]);
+  quaternion[nlocal][2] = atof(values[14]);
+  quaternion[nlocal][3] = atof(values[15]);
+  MathExtra::qnormalize(quaternion[nlocal]);
 
   x[nlocal][0] = coord[0];
   x[nlocal][1] = coord[1];
@@ -1199,7 +1212,7 @@ void AtomVecSuperquadric::data_atom(double *coord, tagint imagetmp, char **value
 
   angmom[nlocal][0] = angmom[nlocal][1] = angmom[nlocal][2] = 0.0;
 
-  quatIdentity4D(quaternion[nlocal]);
+  // quatIdentity4D(quaternion[nlocal]);
   MathExtraLiggghtsNonspherical::bounding_sphere_radius_superquadric(shape[nlocal], blockiness[nlocal], radius+nlocal);
 
   MathExtraLiggghtsNonspherical::volume_superquadric(shape[nlocal], blockiness[nlocal], volume+nlocal);
@@ -1235,6 +1248,9 @@ void AtomVecSuperquadric::data_vel(int m, char **values)
   omega[m][0] = atof(values[3]);
   omega[m][1] = atof(values[4]);
   omega[m][2] = atof(values[5]);
+  angmom[m][0] = atof(values[6]);
+  angmom[m][1] = atof(values[7]);
+  angmom[m][2] = atof(values[8]);
 }
 
 /* ----------------------------------------------------------------------
@@ -1262,23 +1278,24 @@ void AtomVecSuperquadric::pack_data(double **buf)
     buf[i][4] = x[i][0];
     buf[i][5] = x[i][1];
     buf[i][6] = x[i][2];
-    buf[i][7] = ubuf((image[i] & IMGMASK) - IMGMAX).d;
-    buf[i][8] = ubuf((image[i] >> IMGBITS & IMGMASK) - IMGMAX).d;
-    buf[i][9] = ubuf((image[i] >> IMG2BITS) - IMGMAX).d;
-    buf[i][10] = shape[i][0];
-    buf[i][11] = shape[i][1];
-    buf[i][12] = shape[i][2];
-    buf[i][13] = blockiness[i][0];
-    buf[i][14] = blockiness[i][1];
-    buf[i][15] = quaternion[i][0];
-    buf[i][16] = quaternion[i][1];
-    buf[i][17] = quaternion[i][2];
-    buf[i][18] = quaternion[i][3];
-    buf[i][19] = inertia[i][0];
-    buf[i][20] = inertia[i][1];
-    buf[i][21] = inertia[i][2];
-    buf[i][22] = area[i];
+    buf[i][7] = shape[i][0];
+    buf[i][8] = shape[i][1];
+    buf[i][9] = shape[i][2];
+    buf[i][10] = blockiness[i][0];
+    buf[i][11] = blockiness[i][1];
+    buf[i][12] = quaternion[i][0];
+    buf[i][13] = quaternion[i][1];
+    buf[i][14] = quaternion[i][2];
+    buf[i][15] = quaternion[i][3];
+    buf[i][16] = inertia[i][0];
+    buf[i][17] = inertia[i][1];
+    buf[i][18] = inertia[i][2];
+    buf[i][19] = area[i];
+    buf[i][20] = ubuf((image[i] & IMGMASK) - IMGMAX).d;
+    buf[i][21] = ubuf((image[i] >> IMGBITS & IMGMASK) - IMGMAX).d;
+    buf[i][22] = ubuf((image[i] >> IMG2BITS) - IMGMAX).d;
   }
+
 }
 
 /* ----------------------------------------------------------------------
@@ -1296,22 +1313,22 @@ void AtomVecSuperquadric::pack_data(double **buf,int tag_offset)
     buf[i][4] = x[i][0];
     buf[i][5] = x[i][1];
     buf[i][6] = x[i][2];
-    buf[i][7] = ubuf((image[i] & IMGMASK) - IMGMAX).d;
-    buf[i][8] = ubuf((image[i] >> IMGBITS & IMGMASK) - IMGMAX).d;
-    buf[i][9] = ubuf((image[i] >> IMG2BITS) - IMGMAX).d;
-    buf[i][10] = shape[i][0];
-    buf[i][11] = shape[i][1];
-    buf[i][12] = shape[i][2];
-    buf[i][13] = blockiness[i][0];
-    buf[i][14] = blockiness[i][1];
-    buf[i][15] = quaternion[i][0];
-    buf[i][16] = quaternion[i][1];
-    buf[i][17] = quaternion[i][2];
-    buf[i][18] = quaternion[i][3];
-    buf[i][19] = inertia[i][0];
-    buf[i][20] = inertia[i][1];
-    buf[i][21] = inertia[i][2];
-    buf[i][22] = area[i];
+    buf[i][7] = shape[i][0];
+    buf[i][8] = shape[i][1];
+    buf[i][9] = shape[i][2];
+    buf[i][10] = blockiness[i][0];
+    buf[i][11] = blockiness[i][1];
+    buf[i][12] = quaternion[i][0];
+    buf[i][13] = quaternion[i][1];
+    buf[i][14] = quaternion[i][2];
+    buf[i][15] = quaternion[i][3];
+    buf[i][16] = inertia[i][0];
+    buf[i][17] = inertia[i][1];
+    buf[i][18] = inertia[i][2];
+    buf[i][19] = area[i];
+    buf[i][20] = ubuf((image[i] & IMGMASK) - IMGMAX).d;
+    buf[i][21] = ubuf((image[i] >> IMGBITS & IMGMASK) - IMGMAX).d;
+    buf[i][22] = ubuf((image[i] >> IMG2BITS) - IMGMAX).d;
   }
 }
 
@@ -1331,13 +1348,18 @@ int AtomVecSuperquadric::pack_data_hybrid(int i, double *buf)
 
 void AtomVecSuperquadric::write_data(FILE *fp, int n, double **buf)
 {
-  for (int i = 0; i < n; i++)
-    fprintf(fp,"%d %d %-1.16e %-1.16e %-1.16e %-1.16e %-1.16e %d %d %d\n",
+  for (int i = 0; i < n; i++){
+    fprintf(fp,"%d %d %-1.5e %-1.5e %-1.5e %-1.5e %-1.5e %-1.5e %-1.5e %-1.5e %-1.2e %-1.2e %-1.5e %-1.5e %-1.5e %-1.5e %-1.5e %-1.5e %-1.5e %-1.5e %d %d %d\n",
             (int) ubuf(buf[i][0]).i,(int) ubuf(buf[i][1]).i,
             buf[i][2],buf[i][3],
             buf[i][4],buf[i][5],buf[i][6],
-            (int) ubuf(buf[i][7]).i,(int) ubuf(buf[i][8]).i,
-            (int) ubuf(buf[i][9]).i);
+            buf[i][7],buf[i][8],buf[i][9],
+            buf[i][10],buf[i][11],buf[i][12],
+            buf[i][13],buf[i][14],buf[i][15],buf[i][16],
+            buf[i][17],buf[i][18],buf[i][19],
+            (int) ubuf(buf[i][20]).i,(int) ubuf(buf[i][21]).i,
+            (int) ubuf(buf[i][23]).i);
+  }
 }
 
 /* ----------------------------------------------------------------------
@@ -1383,6 +1405,9 @@ void AtomVecSuperquadric::pack_vel(double **buf,int tag_offset)
     buf[i][4] = omega[i][0];
     buf[i][5] = omega[i][1];
     buf[i][6] = omega[i][2];
+    buf[i][7] = angmom[i][0];
+    buf[i][8] = angmom[i][1];
+    buf[i][9] = angmom[i][2];
   }
 }
 
@@ -1403,9 +1428,9 @@ int AtomVecSuperquadric::pack_vel_hybrid(int i, double *buf)
 void AtomVecSuperquadric::write_vel(FILE *fp, int n, double **buf)
 {
   for (int i = 0; i < n; i++)
-    fprintf(fp,"%d %-1.16e %-1.16e %-1.16e %-1.16e %-1.16e %-1.16e\n",
+    fprintf(fp,"%d %-1.8e %-1.8e %-1.8e %-1.8e %-1.8e %-1.8e %-1.8e %-1.8e %-1.8e\n",
             (int) ubuf(buf[i][0]).i,buf[i][1],buf[i][2],buf[i][3],
-            buf[i][4],buf[i][5],buf[i][6]);
+            buf[i][4],buf[i][5],buf[i][6],buf[i][7],buf[i][8],buf[i][9]);
 }
 
 /* ----------------------------------------------------------------------
